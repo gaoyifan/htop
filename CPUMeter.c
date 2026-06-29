@@ -332,12 +332,20 @@ static void CPUMeterCommonDraw(Meter* this, int x, int y, int w, int ncol) {
    Meter** meters = data->meters;
    int start, count;
    AllCPUsMeter_getRange(this, &start, &count);
-   int colwidth = w / ncol;
-   int diff = w % ncol;
+   if (count < 1)
+      return;
+   // ncol is the maximum number of columns this meter type lays out. When the
+   // meter shows fewer CPUs than that, split the width across the columns that
+   // are actually used so each bar fills the available space instead of leaving
+   // the unused columns blank.
    int nrows = (count + ncol - 1) / ncol;
+   int actualcol = (count + nrows - 1) / nrows;
+   int colwidth = w / actualcol;
+   int diff = w % actualcol;
    for (int i = 0; i < count; i++) {
-      int d = (i / nrows) > diff ? diff : (i / nrows); // dynamic spacer
-      int xpos = x + ((i / nrows) * colwidth) + d;
+      int col = i / nrows;
+      int d = col > diff ? diff : col; // dynamic spacer
+      int xpos = x + (col * colwidth) + d;
       int ypos = y + ((i % nrows) * meters[0]->h);
       meters[i]->draw(meters[i], xpos, ypos, colwidth);
    }
